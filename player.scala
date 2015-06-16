@@ -1,7 +1,7 @@
 
 // package blackjack
 
-import scala.collection.mutable.MutableList
+// import scala.collection.mutable.MutableList
 
 class Hand() {
   var cards = MutableList[Card]()
@@ -22,8 +22,6 @@ class Hand() {
       aceCount -= 1
     }
 
-    if (score > 21) score = 0
-
     return score
   }
 
@@ -31,8 +29,12 @@ class Hand() {
     cards += card
     size += 1
     handValue = getScore()
-    println(handValue)
     if (card.number == 'A') aceCount += 1
+  }
+
+  def getCard(idx: Int): Card = {
+    val show = this.cards(idx)
+    return show
   }
 
   def discard() {
@@ -47,11 +49,14 @@ class Hand() {
     return (handValue == 17 & aceCount == 1 & size == 2)
   }
 
-  def clear() = cards.clear()
+  def clear() {
+    cards.clear()
+    handValue = getScore()
+  }
 
   override def toString(): String = {
-    var msg = cards.mkString(",")
-    msg += "\nValue: " + handValue.toString
+    var msg = cards.mkString("|")
+    msg += ", Value: " + handValue.toString
     return msg
   }
 
@@ -93,24 +98,102 @@ class Dealer(val pname: String, val buyIn: Float) extends Player(pname, buyIn){
     return (choice == "hit")
   }
 
+  def playHand() {
+    while (this.hit) {
+      dealCard(this)
+    }
+  }
+
   def dealCard(player: Player) {
     val card = deck.drawCard()
     player.receiveCard(card)
   }
 
-  def dealHands(players: List[Player]) {
+  def showCard(): Card = {
+    return hand.getCard(1)
+  }
+
+  def dealHands(players: List[Gambler]) {
+    deck = getDeck
     for (c <- 1 to 2) {
       for (player <- players) {
-       if (player.isInstanceOf[Gambler]){
-          dealCard(player)
-        }
+        dealCard(player)
       }
       dealCard(this)
     }
   }
+
+  def processHits(players: List[Gambler]) {
+    for (player <- players) {
+      while (player.hit) {
+        this.dealCard(player)
+        if (player.hand.handValue == 21) {
+          println("Nice hand!")
+        }
+        else if (player.hand.handValue > 21) {
+          println("You busted!")
+        }
+      }
+    }
+  }
+
+  def evaluateHand(playerScore: Int, dealerScore: Int): String = {
+    if (playerScore > 21) {
+      return "Lose"
+    }
+    else if (dealerScore > 21) {
+      return "Win"
+    }
+    else if (playerScore > dealerScore) {
+      return "Win"
+    }
+    else if (playerScore == dealerScore) {
+      return "Push"
+    }
+    else {
+      return "Lose"
+    }
+  }
+
+  def evaluateHands(players: List[Gambler]) {
+    for (player <- players) {
+      val result = evaluateHand(player.hand.handValue, this.hand.handValue)
+      printf("%s: %s\n", player.name, player.hand.toString)
+      printf("Dealer: %s\n", this.hand.toString)
+      printf("***%s***\n", result)
+      player.discard()
+    }
+    this.discard()
+  }
 }
 
 class Gambler(val pname: String, val buyIn: Float) extends Player(pname, buyIn) {
-  var x = 3
+  def hit(): Boolean = {
+    if (this.hand.handValue > 20) {
+      return false
+    }
+    printf("%s, you have %s\n", this.name, this.hand.toString)
+    val hit = scala.io.StdIn.readLine("Do you want to hit? (y/n) ")
+    println
+    return (hit == "y")
+  }
+
 }
 
+class Blackjack() {
+  val dealer = new Dealer("Bob", 0)
+  val p1 = new Gambler("Seth", 10)
+  val p2 = new Gambler("Tom", 9)
+  val p3 = new Gambler("Joe", 1)
+  val players = List(p1, p2, p3)
+
+  def playRound() {
+    dealer.dealHands(players)
+    val dealerCard = dealer.showCard
+    printf("Dealer has %d, %s turned up\n", dealerCard.score, dealerCard)
+    dealer.processHits(players)
+    println(dealer.hand)
+    dealer.playHand
+    dealer.evaluateHands(players)
+  }
+}

@@ -11,6 +11,12 @@ class Card(numberc: Char, suitc: Char) {
     val score = Card.valueMap(number)
     
     override def toString = "<" + number.toString + ", " + suit.toString + ">";
+    // override def toString(): String = {
+    //   var msg = "|" + " "*3 + number + " "*3 + "|\n"
+    //   msg += "|" + " "*7 + "|\n"
+    //   msg += "|" + " "*3 + suit + " "*3 + "|\n"
+    //   return msg
+    // }
 }
 object Card {
   val valueMap = Map('2' -> 2, '3' -> 3, '4' -> 4,
@@ -41,7 +47,6 @@ class Deck() {
       if (!isEmpty) {
         val drawn = cards.last
         cards = cards.init
-        println(drawn)
         return drawn
       }
       else {
